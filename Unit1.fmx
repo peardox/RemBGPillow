@@ -42,6 +42,14 @@ object Form1: TForm1
       Text = 'Test'
       OnClick = btnTestClick
     end
+    object btnImage: TButton
+      Anchors = [akLeft, akTop, akRight, akBottom]
+      Position.X = 552.000000000000000000
+      Position.Y = 8.000000000000000000
+      TabOrder = 1
+      Text = 'Image'
+      OnClick = btnImageClick
+    end
   end
   object Splitter1: TSplitter
     Align = Right
@@ -103,5 +111,9 @@ object Form1: TForm1
     ManagerKind = pip
     Left = 328
     Top = 128
+  end
+  object SaveDialog: TSaveDialog
+    Left = 144
+    Top = 296
   end
 end

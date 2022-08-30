@@ -29,6 +29,8 @@ type
     btnTest: TButton;
     Splitter1: TSplitter;
     Layout3: TLayout;
+    btnImage: TButton;
+    SaveDialog: TSaveDialog;
     procedure FormCreate(Sender: TObject);
     procedure PackageBeforeInstall(Sender: TObject);
     procedure PackageAfterInstall(Sender: TObject);
@@ -40,6 +42,7 @@ type
     procedure PackageUnInstallError(Sender: TObject; AErrorMessage: string);
     procedure PackageAddExtraUrl(APackage: TPyManagedPackage; const AUrl: string);
     procedure btnTestClick(Sender: TObject);
+    procedure btnImageClick(Sender: TObject);
   private
     { Private declarations }
     FTask: ITask;
@@ -70,7 +73,8 @@ uses
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-  btnTest.Enabled := false;
+  btnTest.Enabled := False;
+  btnImage.Enabled := False;
   Layout1.Width := floor(Form1.Width / 2);
   SetupSystem;
 end;
@@ -197,7 +201,8 @@ begin
             MaskFPUExceptions(false);
           end;
         finally
-          btnTest.Enabled := true;
+          btnTest.Enabled := True;
+          btnImage.Enabled := True;
         end;
         Log('All done!');
       end);
@@ -293,6 +298,38 @@ begin
   APackage.BeforeUnInstall := PackageBeforeUnInstall;
   APackage.AfterUnInstall := PackageAfterUnInstall;
   APackage.OnUnInstallError := PackageUnInstallError;
+end;
+
+procedure TForm1.btnImageClick(Sender: TObject);
+var
+  image_in, image_out: Variant;
+begin
+  if not Pillow.IsImported then
+    begin
+      ShowMessage('Failed to import Pillow');
+      Exit;
+    end;
+  try
+    if OpenDialog.Execute then
+      begin
+        Log('Reading in ' + OpenDialog.FileName);
+        image_in := Pillow.PIL.Image.open(OpenDialog.FileName);
+        Log('Removing background from ' + OpenDialog.FileName);
+        image_in := RemBG.rembg.remove(image_in);
+        if SaveDialog.Execute then
+          begin
+            Log('Saving as ' + SaveDialog.FileName);
+            Pillow.PIL.Image.save(name = SaveDialog.FileName);
+          end;
+      end;
+  except
+    on E: Exception do
+      begin
+        Log('Unhandled Exception');
+        Log('Class : ' + E.ClassName);
+        Log('Error : ' + E.Message);
+      end;
+  end;
 end;
 
 procedure TForm1.btnTestClick(Sender: TObject);
