@@ -1,0 +1,107 @@
+object Form1: TForm1
+  Left = 0
+  Top = 0
+  Caption = 'Form1'
+  ClientHeight = 480
+  ClientWidth = 640
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnCreate = FormCreate
+  DesignerMasterStyle = 0
+  object Layout1: TLayout
+    Align = Right
+    Position.X = 520.000000000000000000
+    Size.Width = 120.000000000000000000
+    Size.Height = 440.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 3
+    object mmLog: TMemo
+      Touch.InteractiveGestures = [Pan, LongTap, DoubleTap]
+      DataDetectorTypes = []
+      Align = Client
+      Size.Width = 120.000000000000000000
+      Size.Height = 440.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      Viewport.Width = 116.000000000000000000
+      Viewport.Height = 436.000000000000000000
+    end
+  end
+  object Layout2: TLayout
+    Align = Bottom
+    Position.Y = 440.000000000000000000
+    Size.Width = 640.000000000000000000
+    Size.Height = 40.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 9
+    object btnTest: TButton
+      Position.X = 16.000000000000000000
+      Position.Y = 8.000000000000000000
+      TabOrder = 0
+      Text = 'Test'
+      OnClick = btnTestClick
+    end
+  end
+  object Splitter1: TSplitter
+    Align = Right
+    Cursor = crHSplit
+    MinSize = 20.000000000000000000
+    Position.X = 516.000000000000000000
+    Size.Width = 4.000000000000000000
+    Size.Height = 440.000000000000000000
+    Size.PlatformDefault = False
+  end
+  object Layout3: TLayout
+    Align = Client
+    Size.Width = 516.000000000000000000
+    Size.Height = 440.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 12
+  end
+  object OpenDialog: TOpenDialog
+    Left = 144
+    Top = 232
+  end
+  object PyEmbed: TPyEmbeddedResEnvironment39
+    AutoLoad = False
+    PythonVersion = '3.9'
+    Left = 144
+    Top = 168
+  end
+  object PyEng: TPythonEngine
+    AutoLoad = False
+    DllName = 'python311.dll'
+    APIVersion = 1013
+    RegVersion = '3.11'
+    UseLastKnownVersion = False
+    Left = 144
+    Top = 56
+  end
+  object PyIO: TPythonGUIInputOutput
+    UnicodeIO = True
+    RawOutput = False
+    Left = 144
+    Top = 112
+  end
+  object PSUtil: TPSUtil
+    ManagerKind = pip
+    Left = 248
+    Top = 64
+  end
+  object Torch: TPyTorch
+    ManagerKind = pip
+    Left = 248
+    Top = 128
+  end
+  object Pillow: TPillow
+    ManagerKind = pip
+    Left = 328
+    Top = 64
+  end
+  object RemBG: TRemBG
+    ManagerKind = pip
+    Left = 328
+    Top = 128
+  end
+end
