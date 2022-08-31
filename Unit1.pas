@@ -319,7 +319,7 @@ begin
         if SaveDialog.Execute then
           begin
             Log('Saving as ' + SaveDialog.FileName);
-            Pillow.PIL.Image.save(name = SaveDialog.FileName);
+            image_in.save(SaveDialog.FileName);
           end;
       end;
   except
