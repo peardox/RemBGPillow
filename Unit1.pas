@@ -11,7 +11,8 @@ uses
   PyEnvironment.Embeddable.Res, PyEnvironment.Embeddable.Res.Python39,
   FMX.Memo.Types, FMX.Controls.Presentation, FMX.ScrollBox, FMX.Memo,
   FMX.Layouts, System.Threading, System.IOUtils,
-  PyPackage, PyCommon, RemBG, Pillow, PyTorch, PyModule, PSUtil, FMX.StdCtrls;
+  PyPackage, PyCommon, RemBG, Pillow, PyTorch, PyModule, PSUtil, FMX.StdCtrls,
+  FMX.Objects;
 
 type
   TForm1 = class(TForm)
@@ -31,6 +32,8 @@ type
     Layout3: TLayout;
     btnImage: TButton;
     SaveDialog: TSaveDialog;
+    Image1: TImage;
+    Button1: TButton;
     procedure FormCreate(Sender: TObject);
     procedure PackageBeforeInstall(Sender: TObject);
     procedure PackageAfterInstall(Sender: TObject);
@@ -43,13 +46,16 @@ type
     procedure PackageAddExtraUrl(APackage: TPyManagedPackage; const AUrl: string);
     procedure btnTestClick(Sender: TObject);
     procedure btnImageClick(Sender: TObject);
+    procedure Button1Click(Sender: TObject);
   private
     { Private declarations }
     FTask: ITask;
+    Code: TStringlist;
     procedure Log(const AMsg: String);
     procedure SetupPackage(APackage: TPyManagedPackage);
     procedure SetupSystem;
     procedure ThreadedSetup;
+    procedure GraphicToPython;
   public
     { Public declarations }
   end;
@@ -62,9 +68,12 @@ const
   pypath = 'python';
   appname = 'RemBGPillow';
 
+function ImageToPyBytes(ABitmap : TBitmap) : Variant;
+
 implementation
 
 uses
+  VarPyth,
   Math,
   PyPackage.Manager.Pip,
   PyPackage.Manager.Defs.Pip;
@@ -73,10 +82,29 @@ uses
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
+  Code := TStringlist.Create;
+  Code.LoadFromFile('C:\src\RemBGPillow\code.py');
   btnTest.Enabled := False;
   btnImage.Enabled := False;
   Layout1.Width := floor(Form1.Width / 2);
   SetupSystem;
+end;
+
+function ImageToPyBytes(ABitmap : TBitmap) : Variant;
+var
+  _stream : TMemoryStream;
+  _bytes : PPyObject;
+begin
+  _stream := TMemoryStream.Create();
+  try
+    ABitmap.SaveToStream(_stream);
+    Form1.mmLog.Lines.Add('Bytes = ' + _stream.Size.ToString);
+    _bytes := GetPythonEngine.PyBytes_FromStringAndSize(_stream.Memory, _stream.Size);
+    Result := VarPythonCreate(_bytes);
+    GetPythonEngine.Py_DECREF(_bytes);
+  finally
+    _stream.Free;
+  end;
 end;
 
 procedure TForm1.SetupSystem;
@@ -302,7 +330,8 @@ end;
 
 procedure TForm1.btnImageClick(Sender: TObject);
 var
-  image_in, image_out: Variant;
+  LBitmap: TBitmap;
+  bsize, image_in, image_out: Variant;
 begin
   if not Pillow.IsImported then
     begin
@@ -310,10 +339,15 @@ begin
       Exit;
     end;
   try
-    if OpenDialog.Execute then
+//    if OpenDialog.Execute then
       begin
+        OpenDialog.FileName := 'C:\src\RemBGPillow\image68.jpg';
         Log('Reading in ' + OpenDialog.FileName);
-        image_in := Pillow.PIL.Image.open(OpenDialog.FileName);
+        LBitmap := TBitmap.Create;
+        LBitmap.LoadFromFile(OpenDialog.FileName);
+//        bsize := (205, 256);
+//        image_in := Pillow.PIL.Image.open(ImageToPyBytes(LBitmap));
+        image_in := Pillow.PIL.Image.frombytes(mode := 'RGB', data := ImageToPyBytes(LBitmap));
         Log('Removing background from ' + OpenDialog.FileName);
         image_in := RemBG.rembg.remove(image_in);
         if SaveDialog.Execute then
@@ -363,6 +397,54 @@ begin
   Log('PSUtil returned total_memory = ' + virtual_memory.total);
   Log('PSUtil returned available_memory = ' + virtual_memory.available);
   {$ENDIF}
+end;
+
+procedure TForm1.Button1Click(Sender: TObject);
+begin
+  GraphicToPython;
+end;
+
+procedure TForm1.GraphicToPython;
+var
+  _im : Variant;
+  _stream : TMemoryStream;
+  _dib : Variant;
+  pargs: PPyObject;
+  presult :PPyObject;
+  P : PAnsiChar;
+  Len : NativeInt;
+begin
+  Image1.Bitmap.LoadFromFile('C:\src\RemBGPillow\image68.jpg');
+  PyEng.ExecStrings(Code);
+  _im := MainModule.ProcessImage(ImageToPyBytes(Image1.Bitmap));
+
+    // We have to call PyString_AsStringAndSize because the image may contain zeros
+    with GetPythonEngine do begin
+      pargs := MakePyTuple([ExtractPythonObjectFrom(_im)]);
+      try
+        presult := PyEval_CallObjectWithKeywords(
+            ExtractPythonObjectFrom(MainModule.ImageToBytes), pargs, nil);
+        try
+          if PyBytes_AsStringAndSize(presult, P, Len) < 0 then begin
+            ShowMessage('This does not work and needs fixing');
+            Abort;
+          end;
+
+          _stream := TMemoryStream.Create();
+          try
+            _stream.Write(P^, Len);
+            _stream.Position := 0;
+            Image1.Bitmap.LoadFromStream(_stream);
+          finally
+            _stream.Free;
+          end;
+        finally
+          Py_XDECREF(pResult);
+        end;
+      finally
+        Py_DECREF(pargs);
+      end;
+    end;
 end;
 
 end.

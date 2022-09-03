@@ -50,6 +50,13 @@ object Form1: TForm1
       Text = 'Image'
       OnClick = btnImageClick
     end
+    object Button1: TButton
+      Position.X = 272.000000000000000000
+      Position.Y = 8.000000000000000000
+      TabOrder = 2
+      Text = 'Experimental'
+      OnClick = Button1Click
+    end
   end
   object Splitter1: TSplitter
     Align = Right
@@ -66,10 +73,23 @@ object Form1: TForm1
     Size.Height = 440.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 12
+    object Image1: TImage
+      MultiResBitmap = <
+        item
+        end>
+      Align = Client
+      Size.Width = 516.000000000000000000
+      Size.Height = 440.000000000000000000
+      Size.PlatformDefault = False
+    end
   end
   object OpenDialog: TOpenDialog
     Left = 144
     Top = 232
+  end
+  object SaveDialog: TSaveDialog
+    Left = 144
+    Top = 296
   end
   object PyEmbed: TPyEmbeddedResEnvironment39
     AutoLoad = False
@@ -111,9 +131,5 @@ object Form1: TForm1
     ManagerKind = pip
     Left = 328
     Top = 128
-  end
-  object SaveDialog: TSaveDialog
-    Left = 144
-    Top = 296
   end
 end
