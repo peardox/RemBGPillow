@@ -12,15 +12,13 @@ uses
   FMX.Memo.Types, FMX.Controls.Presentation, FMX.ScrollBox, FMX.Memo,
   FMX.Layouts, System.Threading, System.IOUtils,
   PyPackage, PyCommon, RemBG, Pillow, PyTorch, PyModule, PSUtil, FMX.StdCtrls,
-  FMX.Objects;
+  FMX.Objects, FMX.TabControl;
 
 type
   TForm1 = class(TForm)
     PyEmbed: TPyEmbeddedResEnvironment39;
     PyEng: TPythonEngine;
     PyIO: TPythonGUIInputOutput;
-    Layout1: TLayout;
-    mmLog: TMemo;
     PSUtil: TPSUtil;
     Torch: TPyTorch;
     Pillow: TPillow;
@@ -28,12 +26,14 @@ type
     OpenDialog: TOpenDialog;
     Layout2: TLayout;
     btnTest: TButton;
-    Splitter1: TSplitter;
-    Layout3: TLayout;
     btnImage: TButton;
     SaveDialog: TSaveDialog;
-    Image1: TImage;
     Button1: TButton;
+    TabControl1: TTabControl;
+    TabItem1: TTabItem;
+    TabItem2: TTabItem;
+    mmLog: TMemo;
+    Image1: TImage;
     procedure FormCreate(Sender: TObject);
     procedure PackageBeforeInstall(Sender: TObject);
     procedure PackageAfterInstall(Sender: TObject);
@@ -47,10 +47,12 @@ type
     procedure btnTestClick(Sender: TObject);
     procedure btnImageClick(Sender: TObject);
     procedure Button1Click(Sender: TObject);
+    procedure FormActivate(Sender: TObject);
   private
     { Private declarations }
     FTask: ITask;
     Code: TStringlist;
+    CalledSystemSetup: Boolean;
     procedure Log(const AMsg: String);
     procedure SetupPackage(APackage: TPyManagedPackage);
     procedure SetupSystem;
@@ -80,14 +82,24 @@ uses
 
 {$R *.fmx}
 
+procedure TForm1.FormActivate(Sender: TObject);
+begin
+  if not CalledSystemSetup then
+    begin
+      mmLog.Lines.Add('Calling SystemSetup');
+      CalledSystemSetup := True;
+      SetupSystem;
+      mmLog.Lines.Add('Back from SystemSetup');
+    end;
+end;
+
 procedure TForm1.FormCreate(Sender: TObject);
 begin
   Code := TStringlist.Create;
-  Code.LoadFromFile('C:\src\RemBGPillow\code.py');
+  Code.LoadFromFile('D:\src\RemBGPillow\src\code.py');
   btnTest.Enabled := False;
   btnImage.Enabled := False;
-  Layout1.Width := floor(Form1.Width / 2);
-  SetupSystem;
+  CalledSystemSetup := False;
 end;
 
 function ImageToPyBytes(ABitmap : TBitmap) : Variant;
@@ -189,58 +201,71 @@ end;
 
 procedure TForm1.ThreadedSetup;
 begin
-    try
-      PyEmbed.Setup(PyEmbed.PythonVersion);
-      FTask.CheckCanceled();
-      TThread.Synchronize(nil, procedure() begin
-        var act: Boolean := PyEmbed.Activate(PyEmbed.PythonVersion);
-        if act then
-          Log('Python Activated')
-        else
-          Log('Python Activation failed');
-      end);
-      FTask.CheckCanceled();
-
-      Pillow.Install();
-      FTask.CheckCanceled();
-
-      RemBG.Install();
-      FTask.CheckCanceled();
-
-      {$IFNDEF MACOS64}
-      PSUtil.Install();
-      FTask.CheckCanceled();
-      {$ENDIF}
-
-      Torch.Install();
-      FTask.CheckCanceled();
-
-      TThread.Queue(nil, procedure() begin
+  try
+    if PyEmbed.Setup(PyEmbed.PythonVersion) then
+      begin
         try
-          MaskFPUExceptions(true);
-          try
-            Pillow.Import();
-            RemBG.Import();
-            {$IFNDEF MACOS64}
-            PSUtil.Import();
-            {$ENDIF}
-            Torch.Import();
-          finally
-            MaskFPUExceptions(false);
+          FTask.CheckCanceled();
+          TThread.Synchronize(nil, procedure() begin
+            var act: Boolean := PyEmbed.Activate(PyEmbed.PythonVersion);
+            if act then
+              begin
+              Log('Python Activated');
+                FTask.CheckCanceled();
+
+                Pillow.Install();
+                FTask.CheckCanceled();
+
+                RemBG.Install();
+                FTask.CheckCanceled();
+
+                {$IFNDEF MACOS64}
+                PSUtil.Install();
+                FTask.CheckCanceled();
+                {$ENDIF}
+
+                Torch.Install();
+                FTask.CheckCanceled();
+
+                TThread.Queue(nil, procedure() begin
+                  try
+                    MaskFPUExceptions(true);
+                    try
+                      Pillow.Import();
+                      RemBG.Import();
+                      {$IFNDEF MACOS64}
+                      PSUtil.Import();
+                      {$ENDIF}
+                      Torch.Import();
+                    finally
+                      MaskFPUExceptions(false);
+                    end;
+                  finally
+                    btnTest.Enabled := True;
+                    btnImage.Enabled := True;
+                  end;
+                  Log('All done!');
+                end);
+
+              end
+            else
+              Log('Python Activation failed');
+          end);
+        except
+          on E: Exception do begin
+            TThread.Queue(nil, procedure() begin
+              ShowMessage('Something went terribly wrong');
+            end);
           end;
-        finally
-          btnTest.Enabled := True;
-          btnImage.Enabled := True;
         end;
-        Log('All done!');
-      end);
-    except
-      on E: Exception do begin
-        TThread.Queue(nil, procedure() begin
-          ShowMessage('Something went terribly wrong');
-        end);
-      end;
     end;
+  except
+    on E: Exception do begin
+      TThread.Queue(nil, procedure() begin
+        ShowMessage('Something went terribly wrong');
+      end);
+    end;
+  end;
 end;
 
 procedure TForm1.Log(const AMsg: String);
@@ -341,7 +366,7 @@ begin
   try
 //    if OpenDialog.Execute then
       begin
-        OpenDialog.FileName := 'C:\src\RemBGPillow\image68.jpg';
+        OpenDialog.FileName := 'D:\src\RemBGPillow\src\image68.jpg';
         Log('Reading in ' + OpenDialog.FileName);
         LBitmap := TBitmap.Create;
         LBitmap.LoadFromFile(OpenDialog.FileName);
@@ -414,7 +439,7 @@ var
   P : PAnsiChar;
   Len : NativeInt;
 begin
-  Image1.Bitmap.LoadFromFile('C:\src\RemBGPillow\image68.jpg');
+  Image1.Bitmap.LoadFromFile('d:\src\RemBGPillow\src\image68.jpg');
   PyEng.ExecStrings(Code);
   _im := MainModule.ProcessImage(ImageToPyBytes(Image1.Bitmap));
 
