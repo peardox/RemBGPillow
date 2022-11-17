@@ -37,12 +37,12 @@ type
     procedure FormCreate(Sender: TObject);
     procedure PackageBeforeInstall(Sender: TObject);
     procedure PackageAfterInstall(Sender: TObject);
-    procedure PackageInstallError(Sender: TObject; AErrorMessage: string);
+    procedure PackageInstallError(Sender: TObject; AException: Exception; var AAbort: Boolean);
     procedure PackageAfterImport(Sender: TObject);
     procedure PackageBeforeImport(Sender: TObject);
     procedure PackageBeforeUnInstall(Sender: TObject);
     procedure PackageAfterUnInstall(Sender: TObject);
-    procedure PackageUnInstallError(Sender: TObject; AErrorMessage: string);
+    procedure PackageUnInstallError(Sender: TObject; AException: Exception; var AAbort: Boolean);
     procedure PackageAddExtraUrl(APackage: TPyManagedPackage; const AUrl: string);
     procedure btnTestClick(Sender: TObject);
     procedure btnImageClick(Sender: TObject);
@@ -280,9 +280,9 @@ begin
   Log('Installed ' + TPyPackage(Sender).PyModuleName);
 end;
 
-procedure TForm1.PackageInstallError(Sender: TObject; AErrorMessage: string);
+procedure TForm1.PackageInstallError(Sender: TObject; AException: Exception; var AAbort: Boolean);
 begin
-  Log('Error for ' + TPyPackage(Sender).PyModuleName + ' : ' + AErrorMessage);
+  Log('Error for ' + TPyPackage(Sender).PyModuleName + ' : ' + AException.Message);
 end;
 
 procedure TForm1.PackageBeforeUnInstall(Sender: TObject);
@@ -295,9 +295,9 @@ begin
   Log('UnInstalled ' + TPyPackage(Sender).PyModuleName);
 end;
 
-procedure TForm1.PackageUnInstallError(Sender: TObject; AErrorMessage: string);
+procedure TForm1.PackageUnInstallError(Sender: TObject; AException: Exception; var AAbort: Boolean);
 begin
-  Log('Error for ' + TPyPackage(Sender).PyModuleName + ' : ' + AErrorMessage);
+  Log('Error for ' + TPyPackage(Sender).PyModuleName + ' : ' + AException.Message);
 end;
 
 procedure TForm1.PackageBeforeImport(Sender: TObject);
